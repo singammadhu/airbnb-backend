@@ -46,6 +46,9 @@ public class Hotel {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    @ManyToOne
+    private User owner;
+
 //    @OneToMany(mappedBy = "hotel", fetch = FetchType.LAZY)
 //    private List<Room> rooms;
 }
