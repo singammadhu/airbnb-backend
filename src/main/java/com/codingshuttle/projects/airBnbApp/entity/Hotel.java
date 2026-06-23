@@ -51,4 +51,8 @@ public class Hotel {
 
 //    @OneToMany(mappedBy = "hotel", fetch = FetchType.LAZY)
 //    private List<Room> rooms;
+
+    @OneToMany(mappedBy = "hotel",fetch = FetchType.LAZY)
+    private List<Room> rooms;
+
 }

@@ -11,32 +11,46 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 import java.util.List;
 
+//@RestControllerAdvice
+// Global Response Interceptor
+//
+// Purpose:
+// 1. Intercepts every controller response globally
+// 2. Runs before sending response to client
+// 3. Wraps normal response inside ApiResponse
+//    so all APIs follow same response structure
+//
+// Example:
+//
+// Controller returns:
+//      User
+//
+// Final response sent:
+//      ApiResponse<User>
+//
+// Why use?
+// Avoid manually wrapping response in every controller
 @RestControllerAdvice
-// @RestControllerAdvice = @ControllerAdvice + @ResponseBody
-//
-// @ControllerAdvice -> Creates global class connected to all controllers
-//                      (can handle exceptions OR intercept request/response)
-//
-// Here we intercept responses globally
-//
-// @ResponseBody -> Converts Java object to JSON automatically
-
 public class GlobalResponseHandler implements ResponseBodyAdvice<Object> {
 
 
-    // Decides whether beforeBodyWrite() should run or not
-    // return true = intercept every controller response
+    // Decides whether beforeBodyWrite() should run
+    //
+    // return true  -> apply to all controller responses
+    // return false -> skip interception
 
     @Override
     public boolean supports(MethodParameter returnType,
                             Class<? extends HttpMessageConverter<?>> converterType) {
 
-        return true; // apply for all controllers
+        return true;
     }
 
 
+    // Runs AFTER controller returns response
     // Runs BEFORE response goes to client
-    // Used to wrap normal success response inside ApiResponse
+    //
+    // Used to modify/wrap response globally
 
     @Override
     public Object beforeBodyWrite(Object body,
@@ -47,8 +61,7 @@ public class GlobalResponseHandler implements ResponseBodyAdvice<Object> {
                                   ServerHttpResponse response) {
 
 
-        // Some routes should NOT be wrapped
-        // Example: Swagger docs / actuator endpoints
+        // Skip wrapping for routes like swagger/actuator
 
         List<String> allowedRoutes = List.of(
                 "/v3/api-docs",
@@ -56,28 +69,41 @@ public class GlobalResponseHandler implements ResponseBodyAdvice<Object> {
         );
 
 
-        // Check if current request belongs to allowed routes
-
         boolean isAllowed = allowedRoutes.stream()
                 .anyMatch(route ->
                         request.getURI().getPath().contains(route)
                 );
 
 
-        // If response is already ApiResponse OR route is allowed
-        // do nothing, return original response
+        // If already wrapped OR route excluded
+        // return original response
 
         if (body instanceof ApiResponse<?> || isAllowed) {
             return body;
         }
 
 
-        // Wrap normal controller response inside ApiResponse
+        // Wrap normal response inside ApiResponse
 
         return new ApiResponse<>(body);
     }
 }
+/*
+What minimum understanding should you keep?
 
+You should be able to explain in 3 lines:
+
+1. It intercepts every controller response globally.
+2. beforeBodyWrite() runs before sending response to client.
+3. It wraps normal responses inside ApiResponse for consistent API structure.
+
+And know:
+
+supports() → decides whether interception should happen.
+return true → apply to all controllers.
+
+That is enough.
+ */
 
 
 /*
