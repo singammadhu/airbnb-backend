@@ -12,7 +12,7 @@ public interface HotelService {
 
     HotelDto updateHotelById( Long id, HotelDto hotelDto);
 
-    Boolean deleteHotelById(Long id);
+    void deleteHotelById(Long id);
     List<HotelDto> getAllHotels();
 
     void activateHotel(Long hotelId);

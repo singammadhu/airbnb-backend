@@ -49,10 +49,23 @@ public class Hotel {
     @ManyToOne
     private User owner;
 
-//    @OneToMany(mappedBy = "hotel", fetch = FetchType.LAZY)
-//    private List<Room> rooms;
+    @OneToMany(
+            mappedBy = "hotel",
+            fetch = FetchType.LAZY,
+            cascade = CascadeType.REMOVE
+            // when hotel is deleted → delete its rooms
 
-    @OneToMany(mappedBy = "hotel",fetch = FetchType.LAZY)
+            // orphanRemoval = true
+            // when child removed from collection
+            // hotel.getRooms().remove(room)
+            // parent exists, child removed → then delete child
+    )
     private List<Room> rooms;
+    //Stores room categories/types for hotel
+// Example:
+// Deluxe -> 20 rooms
+// Suite -> 10 rooms
+// Standard -> 15 rooms
+// rooms.size() = number of room types, not physical rooms
 
 }
