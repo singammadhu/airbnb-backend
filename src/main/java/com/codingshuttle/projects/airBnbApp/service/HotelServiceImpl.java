@@ -6,12 +6,12 @@ import com.codingshuttle.projects.airBnbApp.entity.Room;
 import com.codingshuttle.projects.airBnbApp.exception.ResourceNotFoundException;
 import com.codingshuttle.projects.airBnbApp.repository.HotelRepository;
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -58,15 +58,16 @@ public class HotelServiceImpl implements HotelService{
     }
 
     @Override
+    @Transactional
     public void deleteHotelById(Long id) {
         Hotel hotel = hotelRepository
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID: " + id));
         // TODO: delete the future inventories for this hotel;
         // delete all future inventory
-        inventoryService.deleteFutureInventoriesByHotel(hotel);
+        inventoryService.deleteFutureInventoriesByHotel(hotel);//1st DB operation
         // delete hotel
-        hotelRepository.deleteById(id);
+        hotelRepository.deleteById(id);//2nd DB operation
     }
 
     @Override

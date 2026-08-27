@@ -48,6 +48,8 @@ public class Inventory {
 
     @Column(nullable = false)
     private LocalDate date;
+    // is it date for which we want to see available or not
+    // and HAVING COUNT(i.date)(here we are count available dates and count it)=:dateCount
 
     @Column(nullable = false,columnDefinition = "INTEGER DEFAULT 0")
     private Integer bookedCount;
@@ -82,5 +84,18 @@ public class Inventory {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-
 }
+/*
+    What date in Inventory means
+
+        Each row in Inventory represents:
+
+        For THIS hotel + THIS room type + THIS date
+        how many rooms are available?
+| hotel | room   | date   | totalCount | bookedCount |
+| ----- | ------ | ------ | ---------- | ----------- |
+| Taj   | Deluxe | 1 July | 10         | 3           |
+| Taj   | Deluxe | 2 July | 10         | 5           |
+| Taj   | Deluxe | 3 July | 10         | 2           |
+
+*/
