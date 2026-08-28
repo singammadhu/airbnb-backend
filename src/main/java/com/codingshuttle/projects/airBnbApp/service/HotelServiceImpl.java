@@ -1,6 +1,8 @@
 package com.codingshuttle.projects.airBnbApp.service;
 
 import com.codingshuttle.projects.airBnbApp.dto.HotelDto;
+import com.codingshuttle.projects.airBnbApp.dto.HotelInfoDto;
+import com.codingshuttle.projects.airBnbApp.dto.RoomDto;
 import com.codingshuttle.projects.airBnbApp.entity.Hotel;
 import com.codingshuttle.projects.airBnbApp.entity.Room;
 import com.codingshuttle.projects.airBnbApp.exception.ResourceNotFoundException;
@@ -93,5 +95,32 @@ public class HotelServiceImpl implements HotelService{
         }
 
     }
+
+    //Step 3 — Implement it in HotelServiceImpl
+    @Override
+    public HotelInfoDto getHotelInfo(Long hotelId) {
+
+        //3.1 Find the hotel
+        Hotel hotel = hotelRepository
+                .findById(hotelId)
+                .orElseThrow(()->
+                        new ResourceNotFoundException(
+                                "Hotel not found with ID: " + hotelId
+                        ));
+
+        //3.2 Get the rooms + 3.3 Convert Room → RoomDto
+        List<RoomDto> rooms = hotel.getRooms()
+                .stream()
+                .map((element)->
+                        modelMapper.map(element, RoomDto.class)
+                ).toList();
+
+        // 3.4 Create HotelInfoDto
+        return new HotelInfoDto(
+                modelMapper.map(hotel, HotelDto.class),
+                rooms
+        );
+    }
+
 
 }

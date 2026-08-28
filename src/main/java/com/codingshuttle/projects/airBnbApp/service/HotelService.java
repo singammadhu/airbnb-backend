@@ -1,6 +1,7 @@
 package com.codingshuttle.projects.airBnbApp.service;
 
 import com.codingshuttle.projects.airBnbApp.dto.HotelDto;
+import com.codingshuttle.projects.airBnbApp.dto.HotelInfoDto;
 import com.codingshuttle.projects.airBnbApp.entity.Hotel;
 
 import java.util.List;
@@ -17,5 +18,7 @@ public interface HotelService {
 
     void activateHotel(Long hotelId);
 
+    //Step 2 — Update HotelService
+    HotelInfoDto getHotelInfo(Long hotelId);
 
 }
