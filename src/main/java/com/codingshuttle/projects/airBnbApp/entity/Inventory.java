@@ -56,6 +56,10 @@ public class Inventory {
     // Number of already booked rooms
     // availableRooms = totalCount - bookedCount
 
+    @Column(nullable = false,columnDefinition = "INTEGER DEFAULT 0")
+    private Integer reservedCount;
+    //Number of rooms in booking stage, so locked for that particular user
+
     @Column(nullable = false)
     private Integer totalCount;
     // Total physical rooms of this room type

@@ -69,6 +69,7 @@ public class InventoryServiceImp implements InventoryService{
     @Override
     public Page<HotelDto> searchHotels(HotelSearchRequest hotelSearchRequest) {
 
+        log.info("searching Hotels for {} city, from {} to {}", hotelSearchRequest.getCity(),hotelSearchRequest.getStartDate(),hotelSearchRequest.getEndDate());
         // Create a Pageable object using the requested page number and page size
         Pageable pageable = PageRequest.of(
                 hotelSearchRequest.getPage(),  // Page number (0-based)

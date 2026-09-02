@@ -3,14 +3,17 @@ package com.codingshuttle.projects.airBnbApp.repository;
 import com.codingshuttle.projects.airBnbApp.entity.Hotel;
 import com.codingshuttle.projects.airBnbApp.entity.Inventory;
 import com.codingshuttle.projects.airBnbApp.entity.Room;
- import org.springframework.data.domain.Page;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
  import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Repository
 public interface InventoryRepository extends JpaRepository<Inventory,Long> {
@@ -26,7 +29,7 @@ public interface InventoryRepository extends JpaRepository<Inventory,Long> {
                 WHERE i.city=:city
                       And i.date BETWEEN :startDate AND :endDate
                       And i.closed=false
-                      And (i.totalCount-i.bookedCount)>=:roomsCount
+                      And (i.totalCount-i.bookedCount-i.reservedCount)>=:roomsCount
                 
                 GROUP BY i.hotel, i.room      
                 HAVING COUNT(i.date) =:dateCount
@@ -41,6 +44,58 @@ public interface InventoryRepository extends JpaRepository<Inventory,Long> {
              @Param("dateCount") Long dateCount,
              Pageable pageable
              );
+
+    // Lock the inventory rows so two users cannot reserve the same
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query(
+            """
+             select i
+             from Inventory i
+             where
+                   i.room.id=:roomId
+               AND i.date between :startDate AND :endDate
+               AND (i.totalCount - i.bookedCount - i.reservedCount) >= :roomsCount
+               AND i.closed= false
+"""
+    )
+    List<Inventory> findAndLockAvailableInventory(
+            @Param("roomId") Long roomId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("roomsCount") Integer roomsCount
+    );
+
+// Inventory represents one Hotel + one Room Type + one Date.
+//
+// A Room belongs to one Hotel.
+// Therefore, once we know the roomId, its associated Hotel is already known.
+//
+// However, one Room has many Inventory rows because inventory is maintained
+// separately for each date. So we use roomId + date range to find the
+// required inventory rows.
+//
+// We could also make the query more explicit by checking hotelId:
+//
+// SELECT i
+// FROM Inventory i
+// WHERE i.hotel.id = :hotelId
+//   AND i.room.id = :roomId
+//   AND i.date BETWEEN :startDate AND :endDate
+//   AND (i.totalCount - i.bookedCount - i.reservedCount) >= :roomsCount
+//   AND i.closed = false
+//
+// Instructor uses roomId only, so we follow that implementation for now.
+
+  //Your mental model
+//    Hotel
+//     ↓ 1 : many
+//    Room
+//    ↓ 1 : many
+//    Inventory
+//    ↓
+//    Date
+
+
 }
 
 
