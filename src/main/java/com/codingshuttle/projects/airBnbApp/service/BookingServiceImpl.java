@@ -2,13 +2,11 @@ package com.codingshuttle.projects.airBnbApp.service;
 
 import com.codingshuttle.projects.airBnbApp.dto.BookingDto;
 import com.codingshuttle.projects.airBnbApp.dto.BookingRequest;
+import com.codingshuttle.projects.airBnbApp.dto.GuestDto;
 import com.codingshuttle.projects.airBnbApp.entity.*;
 import com.codingshuttle.projects.airBnbApp.entity.enums.BookingStatus;
 import com.codingshuttle.projects.airBnbApp.exception.ResourceNotFoundException;
-import com.codingshuttle.projects.airBnbApp.repository.BookingRepository;
-import com.codingshuttle.projects.airBnbApp.repository.HotelRepository;
-import com.codingshuttle.projects.airBnbApp.repository.InventoryRepository;
-import com.codingshuttle.projects.airBnbApp.repository.RoomRepository;
+import com.codingshuttle.projects.airBnbApp.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +14,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -31,6 +30,7 @@ public class BookingServiceImpl implements BookingService {
     private final HotelRepository hotelRepository;
     private final RoomRepository roomRepository;
     private final BookingRepository bookingRepository;
+    private final GuestRepository guestRepository;
 
     @Override
     @Transactional
@@ -118,5 +118,85 @@ public class BookingServiceImpl implements BookingService {
                 booking,
                 BookingDto.class
                 );
+    }
+
+    @Override
+    @Transactional
+    public BookingDto addGuests(Long bookingId, List<GuestDto> guestDtoList) {
+
+        log.info("Adding guests for booking with id: {}", bookingId);
+
+        // Find the existing booking because guests must be associated
+        // with a specific booking.
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(
+                        () -> new ResourceNotFoundException(
+                                "Booking with id: " + bookingId
+                        )
+                );
+
+        // A booking is only valid for a limited time after initialization.
+        // If the 10-minute window has passed, we should not allow
+        // guests to be added to the booking.
+        if (hasBookingExpired(booking)) {
+            throw new IllegalStateException("Booking has expired");
+        }
+
+        // Guests can only be added when the booking is in RESERVED state.
+        // This prevents adding guests to bookings that have already moved
+        // to another state such as GUESTS_ADDED or CONFIRMED.
+        if (booking.getBookingStatus() != BookingStatus.RESERVED) {
+            throw new IllegalStateException(
+                    "Booking is not under reserved status, cannot add guests"
+            );
+        }
+
+        // One booking can have multiple guests,
+        // so process each GuestDto from the request.
+        for (GuestDto guestDto : guestDtoList) {
+
+            // Convert the API DTO into a Guest entity
+            // because JPA repositories save entities, not DTOs.
+            Guest guest = modelMapper.map(guestDto, Guest.class);
+
+            // Currently we use a dummy logged-in user.
+            // Later this will come from Spring Security/authentication.
+            guest.setUser(getCurrentUser());
+
+            // Save the Guest first so it gets its database ID.
+            guest = guestRepository.save(guest);
+
+            // Associate the saved Guest with this Booking.
+            booking.getGuests().add(guest);
+        }
+
+        // All guests have been successfully added.
+        // Move the booking from RESERVED → GUESTS_ADDED.
+        booking.setBookingStatus(BookingStatus.GUESTS_ADDED);
+
+        // Save the updated Booking, including its guest relationship.
+        bookingRepository.save(booking);
+
+        // Convert the updated Booking entity to BookingDto
+        // so the API can return the booking information to the client.
+        return modelMapper.map(booking, BookingDto.class);
+    }
+
+    public boolean hasBookingExpired(Booking booking) {
+
+        // A booking is considered expired 10 minutes after it was created.
+        return booking.getCreatedAt()
+                .plusMinutes(10)
+                .isBefore(LocalDateTime.now());
+    }
+
+    public User getCurrentUser() {
+
+        // Temporary dummy user until authentication is implemented.
+        // TODO: Replace this with the currently authenticated user.
+        User user = new User();
+        user.setId(1L);
+
+        return user;
     }
 }
