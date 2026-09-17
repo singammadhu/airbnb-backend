@@ -6,7 +6,8 @@ import com.codingshuttle.projects.airBnbApp.entity.Hotel;
 import com.codingshuttle.projects.airBnbApp.entity.Inventory;
 import com.codingshuttle.projects.airBnbApp.entity.Room;
 import com.codingshuttle.projects.airBnbApp.repository.InventoryRepository;
- import lombok.RequiredArgsConstructor;
+import com.codingshuttle.projects.airBnbApp.strategy.PricingUpdateService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.PageRequest;
@@ -27,10 +28,35 @@ import java.time.temporal.ChronoUnit;
 public class InventoryServiceImp implements InventoryService{
 
     private final InventoryRepository inventoryRepository;
+    private final PricingUpdateService pricingUpdateService;
     private final ModelMapper modelMapper;
 
     @Override
     // @Transactional // → if one insert fails, rollback all records
+
+    //creating the inventory → calculating dynamic price → collecting → saving to DB.
+    /*
+     * Inventory creation and pricing flow:
+     *
+     * Create Inventory
+     *       ↓
+     * Set base price from Room
+     *       ↓
+     * PricingUpdateService
+     *       ↓
+     * PricingService
+     *       ↓
+     * Base → Surge → Occupancy → Urgency → Holiday
+     *       ↓
+     * Update inventory.price
+     *       ↓
+     * Add to List
+     *       ↓
+     * saveAll()
+     *       ↓
+     * Database
+     */
+
     public void initializeRoomForAYear(Room room) {
         LocalDate today=LocalDate.now();
         LocalDate endDate = today.plusYears(1);
@@ -48,8 +74,10 @@ public class InventoryServiceImp implements InventoryService{
                     .closed(false)
                     .build();
 //            inventoryRepository.save(inventory);
+            pricingUpdateService.updatePrice(inventory);
             inventories.add(inventory);
         }
+        // After all inventory records are created:
         inventoryRepository.saveAll(inventories);
         //Use saveAll when inserting multiple records to reduce database round trips and improve performance.
     }
