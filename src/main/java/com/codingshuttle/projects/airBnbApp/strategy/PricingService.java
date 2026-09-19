@@ -32,3 +32,5 @@ public class PricingService {
      }
 }
 //That's why this pattern is powerful: we can add/remove pricing rules without changing the existing strategies.
+
+//🔥Build the decorators inside → outside. Execute the chain outside → inside → return outside.
